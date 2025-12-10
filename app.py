@@ -24,4 +24,4 @@ if uploaded_file is not None:
     jenis_sampah = ["Organik", "Anorganik", "B3 (Berbahaya)", "Kertas", "Plastik"]
     hasil = random.choice(jenis_sampah)
 
-    st.success(f"✔ Hasil Deteksi: **{hasil}**
+    st.success(f"✔ Hasil Deteksi: **{hasil}**)
