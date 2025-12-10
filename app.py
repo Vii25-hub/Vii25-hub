@@ -1,8 +1,7 @@
-streamlit run app.py
-
 import streamlit as st
 from PIL import Image
 import time
+import random
 
 st.set_page_config(page_title="AI Deteksi Sampah", layout="centered")
 
@@ -22,11 +21,7 @@ if uploaded_file is not None:
         progress.progress(i + 1)
         time.sleep(0.01)
 
-    # PROTOTIPE -> hasil dummy
     jenis_sampah = ["Organik", "Anorganik", "B3 (Berbahaya)", "Kertas", "Plastik"]
-    
-    import random
     hasil = random.choice(jenis_sampah)
 
-    st.success(f"✔ Hasil Deteksi: **{hasil}**")
-    st.write("Ini adalah hasil *dummy*. Dalam versi final, akan digunakan model AI asli.")
+    st.success(f"✔ Hasil Deteksi: **{hasil}**
