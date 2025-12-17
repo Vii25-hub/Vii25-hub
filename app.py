@@ -69,20 +69,27 @@ if uploaded_file:
         ax.invert_yaxis()
         st.pyplot(fig)
 
-        # =========================
-        # WORDCLOUD
-        # =========================
-        st.subheader("☁️ WordCloud")
-        wc = WordCloud(
-            width=800,
-            height=400,
-            background_color="white"
-        ).generate(" ".join(df["clean_text"]))
+       # =========================
+# WORDCLOUD (AMAN)
+# =========================
+st.subheader("☁️ WordCloud")
 
-        fig, ax = plt.subplots(figsize=(10, 5))
-        ax.imshow(wc, interpolation="bilinear")
-        ax.axis("off")
-        st.pyplot(fig)
+text_wc = " ".join(df["clean_text"].dropna())
+
+if len(text_wc.strip()) == 0:
+    st.warning("⚠️ WordCloud tidak dapat ditampilkan karena tidak ada kata setelah preprocessing.")
+else:
+    wc = WordCloud(
+        width=800,
+        height=400,
+        background_color="white"
+    ).generate(text_wc)
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.imshow(wc, interpolation="bilinear")
+    ax.axis("off")
+    st.pyplot(fig)
+
 
         # =========================
         # SENTIMENT SEDERHANA
