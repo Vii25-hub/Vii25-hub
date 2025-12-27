@@ -3,29 +3,35 @@ import pandas as pd
 import re
 import string
 import matplotlib.pyplot as plt
+
 from collections import Counter
 from wordcloud import WordCloud
 
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+
 st.set_page_config(page_title="NLP Text Analytics", layout="wide")
-st.title("🧠 NLP Text Analytics & Preprocessing")
+st.title("🧠 NLP Text Analytics Lengkap")
 
 uploaded_file = st.file_uploader("Upload file CSV", type=["csv"])
 
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
-    st.subheader("📄 Data Awal (SEMUA DATA)")
-    st.dataframe(df)
+
+    st.subheader("📄 Data CSV (SEMUA BARIS)")
+    st.write(f"Total baris terbaca: {len(df)}")
+    st.dataframe(df, use_container_width=True)
 
     text_col = st.selectbox("Pilih kolom teks", df.columns)
 
-    # ===== SIDEBAR PREPROCESSING =====
     st.sidebar.title("⚙️ Preprocessing")
     remove_duplicate = st.sidebar.checkbox("Remove Duplicate")
     remove_url = st.sidebar.checkbox("Remove URL")
     remove_username = st.sidebar.checkbox("Remove Username")
     remove_symbol = st.sidebar.checkbox("Remove Symbol")
     remove_number = st.sidebar.checkbox("Remove Number")
-    remove_emoji = st.sidebar.checkbox("Remove Emoji")
     lowercase = st.sidebar.checkbox("Case Folding")
 
     def clean_text(text):
@@ -34,8 +40,6 @@ if uploaded_file:
             text = re.sub(r"http\S+|www\S+", "", text)
         if remove_username:
             text = re.sub(r"@\w+", "", text)
-        if remove_emoji:
-            text = re.sub(r"[^\w\s]", "", text)
         if remove_number:
             text = re.sub(r"\d+", "", text)
         if remove_symbol:
@@ -56,13 +60,12 @@ if uploaded_file:
         col2.metric("Total Kata", df["clean_text"].str.split().str.len().sum())
         col3.metric("Rata-rata Panjang Teks", round(df["clean_text"].str.len().mean(), 2))
 
-        # ===== FREKUENSI KATA =====
         words = " ".join(df["clean_text"]).split()
         freq = Counter(words)
         top_words = freq.most_common(20)
-
-        st.subheader("📈 20 Kata Paling Sering")
         word_df = pd.DataFrame(top_words, columns=["Kata", "Frekuensi"])
+
+        st.subheader("📈 20 Kata Terbanyak")
         st.dataframe(word_df)
 
         fig, ax = plt.subplots()
@@ -70,23 +73,14 @@ if uploaded_file:
         ax.invert_yaxis()
         st.pyplot(fig)
 
-        # ===== WORDCLOUD =====
         st.subheader("☁️ WordCloud")
-        text_wc = " ".join(df["clean_text"])
-        if text_wc.strip():
-            wc = WordCloud(
-                width=800,
-                height=400,
-                background_color="white"
-            ).generate(text_wc)
+        if len(words) > 0:
+            wc = WordCloud(width=800, height=400, background_color="white").generate(" ".join(words))
             fig, ax = plt.subplots(figsize=(10, 5))
             ax.imshow(wc)
             ax.axis("off")
             st.pyplot(fig)
-        else:
-            st.warning("Tidak ada teks untuk WordCloud")
 
-        # ===== SENTIMENT SEDERHANA =====
         positive_words = ["baik", "bagus", "suka", "senang", "mantap", "puas"]
         negative_words = ["buruk", "jelek", "kecewa", "lambat", "error"]
 
@@ -99,17 +93,43 @@ if uploaded_file:
                 return "Negatif"
             return "Netral"
 
-        df["Sentimen"] = df["clean_text"].apply(sentiment)
+        df["sentiment"] = df["clean_text"].apply(sentiment)
 
         st.subheader("😊 Statistik Sentimen")
-        sent = df["Sentimen"].value_counts()
+        sent = df["sentiment"].value_counts()
         fig, ax = plt.subplots()
         ax.pie(sent, labels=sent.index, autopct="%1.1f%%")
         st.pyplot(fig)
 
+        st.subheader("📐 TF-IDF Feature Extraction")
+        vectorizer = TfidfVectorizer(max_features=1000)
+        X = vectorizer.fit_transform(df["clean_text"])
+        y = df["sentiment"]
+
+        tfidf_df = pd.DataFrame(X.toarray(), columns=vectorizer.get_feature_names_out())
+        st.dataframe(tfidf_df.head())
+
+        st.subheader("🤖 Machine Learning – Naive Bayes")
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42
+        )
+
+        model = MultinomialNB()
+        model.fit(X_train, y_train)
+
+        y_pred = model.predict(X_test)
+
+        st.metric("Akurasi Model", round(accuracy_score(y_test, y_pred) * 100, 2))
+
+        st.text("Classification Report")
+        st.text(classification_report(y_test, y_pred))
+
+        st.text("Confusion Matrix")
+        st.write(confusion_matrix(y_test, y_pred))
+
         st.download_button(
-            "⬇️ Download Hasil CSV",
+            "⬇️ Download Hasil Lengkap",
             df.to_csv(index=False),
-            "hasil_nlp.csv",
+            "hasil_nlp_lengkap.csv",
             "text/csv"
         )
